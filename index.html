@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume Builder — Sandeep Goyal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── Top Bar ── */
+  .topbar {
+    background: #16213e;
+    border-bottom: 1px solid #0f3460;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .topbar h1 { font-size: 16px; font-weight: 600; color: #1e6ab4; }
+  .topbar .badge { background: #0f3460; color: #a0c4ff; font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+  .topbar-actions { margin-left: auto; display: flex; gap: 8px; }
+  .btn { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+  .btn-primary { background: #1e6ab4; color: white; }
+  .btn-primary:hover { background: #1558a0; }
+  .btn-secondary { background: #0f3460; color: #a0c4ff; border: 1px solid #1a4a7a; }
+  .btn-secondary:hover { background: #1a4a7a; }
+
+  /* ── Main Layout ── */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Editor Panel ── */
+  .editor-panel {
+    width: 340px;
+    flex-shrink: 0;
+    background: #16213e;
+    border-right: 1px solid #0f3460;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .editor-tabs {
+    display: flex;
+    border-bottom: 1px solid #0f3460;
+    flex-shrink: 0;
+  }
+  .editor-tab {
+    flex: 1;
+    padding: 10px 6px;
+    font-size: 11px;
+    text-align: center;
+    cursor: pointer;
+    color: #888;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .editor-tab.active { color: #1e6ab4; border-bottom-color: #1e6ab4; }
+  .editor-scroll { flex: 1; overflow-y: auto; padding: 16px; }
+  .editor-scroll::-webkit-scrollbar { width: 4px; }
+  .editor-scroll::-webkit-scrollbar-thumb { background: #0f3460; border-radius: 2px; }
+
+  .field-group { margin-bottom: 16px; }
+  .field-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .field-input {
+    width: 100%;
+    background: #0f3460;
+    border: 1px solid #1a4a7a;
+    border-radius: 6px;
+    color: #eee;
+    font-size: 13px;
+    padding: 8px 10px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.4;
+    transition: border-color 0.2s;
+  }
+  .field-input:focus { outline: none; border-color: #1e6ab4; }
+  .section-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1e6ab4;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 20px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #0f3460;
+  }
+  .bullet-item { display: flex; gap: 6px; margin-bottom: 8px; }
+  .bullet-item textarea { flex: 1; }
+  .remove-btn {
+    background: #0d2a45;
+    border: 1px solid #1a4a7a;
+    color: #1e6ab4;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+  .add-btn {
+    width: 100%;
+    background: #0f3460;
+    border: 1px dashed #1a4a7a;
+    color: #a0c4ff;
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .add-btn:hover { background: #1a4a7a; }
+
+  .job-card {
+    background: #0f3460;
+    border: 1px solid #1a4a7a;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .job-card-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: #a0c4ff;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* ── Preview Panel ── */
+  .preview-panel {
+    flex: 1;
+    background: #888;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+  }
+  .preview-panel::-webkit-scrollbar { width: 6px; }
+  .preview-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+  /* ── Resume Styles ── */
+  .resume {
+    width: 794px;
+    min-height: 1123px;
+    background: white;
+    color: #222;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 9.5px;
+    line-height: 1.4;
+    box-shadow: 0 8px 48px rgba(10,49,97,0.22);
+    flex-shrink: 0;
+    border-top: 5px solid #0a3161;
+  }
+
+  /* Resume Header */
+  .r-header {
+    background: linear-gradient(135deg, #0a3161 0%, #1e6ab4 60%, #3a8fd4 100%);
+    padding: 20px 24px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .r-header-text { flex: 1; }
+  .r-name {
+    font-family: 'Arial Black', 'Arial', sans-serif;
+    font-size: 35.0px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 1px;
+    line-height: 1;
+    margin-bottom: 5px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  }
+  .r-tagline {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    color: #b8d8f8;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .r-contact {
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    color: #dceefb;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .r-photo {
+    width: 108px;
+    height: 108px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 3px solid rgba(255,255,255,0.5);
+    flex-shrink: 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  }
+  .r-photo-placeholder {
+    width: 108px;
+    height: 108px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.15);
+    border: 3px solid rgba(255,255,255,0.4);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 27.5px;
+    color: white;
+  }
+
+  /* Resume Body */
+  .r-body { display: flex; }
+  .r-left { flex: 1; padding: 16px 18px; border-right: 1px solid #e0e8f4; }
+  .r-right { width: 230px; flex-shrink: 0; padding: 16px 14px; background: #f2f7fd; }
+
+  /* Section Titles */
+  .r-section-title {
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #0a3161, #1e6ab4);
+    padding: 4px 10px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .r-section-title::before { content: '◆'; font-size: 7px; opacity: 0.8; }
+
+  /* Executive Profile */
+  .r-profile {
+    font-family: Arial, sans-serif;
+    font-size: 11.2px;
+    color: #333;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, #f0f5fb, #e8f1fb);
+    border-left: 4px solid #1e6ab4;
+    border-radius: 0 6px 6px 0;
+    box-shadow: 0 1px 6px rgba(10,49,97,0.07);
+  }
+
+  /* Experience */
+  .r-job {
+    margin-bottom: 14px;
+    padding-left: 10px;
+    border-left: 3px solid #d0e4f7;
+    transition: border-color 0.2s;
+  }
+  .r-job:hover { border-left-color: #1e6ab4; }
+  .r-job-title {
+    font-family: Arial, sans-serif;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #0a3161;
+    margin-bottom: 2px;
+  }
+  .r-job-company {
+    display: inline-block;
+    background: linear-gradient(90deg, #0a3161, #1e6ab4);
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 10.0px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-bottom: 3px;
+  }
+  .r-job-meta {
+    font-family: Arial, sans-serif;
+    font-size: 10.0px;
+    color: #666;
+    margin-bottom: 5px;
+    display: flex;
+    gap: 12px;
+  }
+  .r-job-bullets { padding-left: 0; list-style: none; }
+  .r-job-bullets li {
+    font-family: Arial, sans-serif;
+    font-size: 10.6px;
+    color: #333;
+    line-height: 1.45;
+    padding: 2px 0 2px 12px;
+    position: relative;
+  }
+  .r-job-bullets li::before { content: '•'; position: absolute; left: 2px; color: #0a3161; }
+  .r-job-bullets li b {
+    color: #0a3161;
+    font-weight: 700;
+  }
+
+  /* Highlight key metrics (numbers + $ + %) inline */
+  .r-profile b {
+    color: #0a3161;
+    font-weight: 700;
+  }
+
+  /* Impact card title highlight */
+  .r-impact-title { color: #0a3161; }
+
+  /* Inline metric pill — wraps numbers/% in bullets */
+  .metric {
+    display: inline-block;
+    background: #e8f1fb;
+    color: #0a3161;
+    font-weight: 700;
+    font-size: 9.4px;
+    padding: 0px 5px;
+    border-radius: 8px;
+    border: 1px solid #b8d4f0;
+    white-space: nowrap;
+  }
+
+  /* Right panel sections */
+  .r-impact-card {
+    background: white;
+    border-left: 3px solid #1e6ab4;
+    border-radius: 0 6px 6px 0;
+    padding: 7px 10px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 5px rgba(10,49,97,0.08);
+  }
+  .r-impact-title {
+    font-family: Arial, sans-serif;
+    font-size: 10.6px;
+    font-weight: 700;
+    color: #0a3161;
+    margin-bottom: 2px;
+  }
+  .r-impact-body {
+    font-family: Arial, sans-serif;
+    font-size: 10.0px;
+    color: #555;
+    line-height: 1.4;
+  }
+
+  .r-edu-item {
+    margin-bottom: 8px;
+    padding-left: 8px;
+    border-left: 2px solid #b8d4f0;
+  }
+  .r-edu-degree {
+    font-family: Arial, sans-serif;
+    font-size: 10.6px;
+    font-weight: 700;
+    color: #0a3161;
+  }
+  .r-edu-school {
+    font-family: Arial, sans-serif;
+    font-size: 10.0px;
+    color: #1e6ab4;
+    font-weight: 600;
+  }
+
+  .r-cert-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+  .r-cert-tag {
+    border: 1px solid #0a3161;
+    color: #0a3161;
+    font-family: Arial, sans-serif;
+    font-size: 9.4px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+  }
+
+  .r-tool-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .r-tool-tag {
+    border: 1px solid #ccc;
+    color: #444;
+    font-family: Arial, sans-serif;
+    font-size: 9.4px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: white;
+  }
+
+  /* Page 2 indicator */
+  .r-page2 {
+    width: 794px;
+    min-height: 200px;
+    background: white;
+    color: #222;
+    font-family: 'Georgia', serif;
+    font-size: 11.9px;
+    margin-top: 8px;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.4);
+    padding: 14px 16px;
+  }
+
+  /* Tab content */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Suggestions panel */
+  .suggestion-item {
+    background: #0f3460;
+    border: 1px solid #1a4a7a;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #ccc;
+    line-height: 1.5;
+  }
+  .suggestion-item .s-label {
+    font-size: 10px;
+    color: #1e6ab4;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Resume Builder</h1>
+  <span class="badge">Sandeep Goyal</span>
+  <div class="topbar-actions">
+    <button class="btn btn-secondary" onclick="exportPDF()">⬇ Export PDF</button>
+    <button class="btn btn-primary" onclick="saveData()">Save Changes</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- ── EDITOR PANEL ── -->
+  <div class="editor-panel">
+    <div class="editor-tabs">
+      <div class="editor-tab active" onclick="switchTab('header')">Header</div>
+      <div class="editor-tab" onclick="switchTab('experience')">Experience</div>
+      <div class="editor-tab" onclick="switchTab('sidebar')">Sidebar</div>
+      <div class="editor-tab" onclick="switchTab('suggestions')">💡 Tips</div>
+    </div>
+
+    <!-- HEADER TAB -->
+    <div class="editor-scroll tab-content active" id="tab-header">
+      <div class="section-header">Personal Info</div>
+      <div class="field-group">
+        <div class="field-label">Full Name</div>
+        <input class="field-input" id="f-name" type="text" oninput="render()" value="SANDEEP GOYAL">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Tagline / Title</div>
+        <textarea class="field-input" id="f-tagline" rows="2" oninput="render()">AI Native TPM Leader & Builder ◆ AI Efficiencies ◆ Sales, CS & GTM ◆ Platform Engineering</textarea>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Email</div>
+        <input class="field-input" id="f-email" type="text" oninput="render()" value="goyalsandeep2k@gmail.com">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Website</div>
+        <input class="field-input" id="f-website" type="text" oninput="render()" value="sandeepgoyal.org">
+      </div>
+      <div class="field-group">
+        <div class="field-label">LinkedIn URL</div>
+        <input class="field-input" id="f-linkedin" type="text" oninput="render()" value="linkedin.com/in/sandgoya">
+      </div>
+      <div class="field-group">
+        <div class="field-label">GitHub URL</div>
+        <input class="field-input" id="f-github" type="text" oninput="render()" value="github.com/goyalsandeep2k">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Phone</div>
+        <input class="field-input" id="f-phone" type="text" oninput="render()" value="650-556-5345">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Location</div>
+        <input class="field-input" id="f-location" type="text" oninput="render()" value="San Francisco Bay Area, CA">
+      </div>
+
+      <div class="section-header">Executive Profile</div>
+      <div class="field-group">
+        <textarea class="field-input" id="f-profile" rows="8" oninput="render()">Visionary Technical Program Management executive with 20+ years driving enterprise-scale transformation across AI/GenAI, Sales & GTM, Customer Success, Cloud Infrastructure (Compute & Storage), and Partner ecosystems at Oracle and Intuit. Pioneer in enterprise AI adoption — launched Intuit's first agentic workflows for Tax preparation, deployed GenAI code assistants delivering a 50% developer velocity lift across 2,000+ engineers, and reimagined the full Lead-to-Cash motion with AI saving 2,400 sellers 10 hours each per week (24,000+ hrs/week recaptured). Consistently translates ambiguous mandates into measurable outcomes: $200M+ revenue pipeline influenced, $7M+ in cost savings, 15% tax-season revenue growth, and OCI migrations for 1,000+ customers representing $500M+ in combined ARR. Proven organization builder who constructs TPM functions from the ground up, shapes operating rhythms for 650-engineer organizations, and led GenAI workforce transformation for 5,000+ employees in partnership with Bain Consulting.</textarea>
+      </div>
+    </div>
+
+    <!-- EXPERIENCE TAB -->
+    <div class="editor-scroll tab-content" id="tab-experience">
+      <div class="section-header">Work Experience</div>
+      <div id="jobs-editor"></div>
+      <button class="add-btn" onclick="addJob()">+ Add Position</button>
+    </div>
+
+    <!-- SIDEBAR TAB -->
+    <div class="editor-scroll tab-content" id="tab-sidebar">
+      <div class="section-header">Executive Impact Cards</div>
+      <div id="impact-editor"></div>
+      <button class="add-btn" onclick="addImpact()">+ Add Impact Card</button>
+
+      <div class="section-header">Education</div>
+      <div class="field-group">
+        <div class="field-label">Degree 1</div>
+        <input class="field-input" id="edu1-degree" oninput="render()" value="PGDBM – Strategy & Finance">
+        <input class="field-input" id="edu1-school" oninput="render()" style="margin-top:4px" value="Narsee Monjee Institute of Management Studies">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Degree 2</div>
+        <input class="field-input" id="edu2-degree" oninput="render()" value="B.Tech – Computer Engineering">
+        <input class="field-input" id="edu2-school" oninput="render()" style="margin-top:4px" value="National Institute of Technology, Kurukshetra">
+      </div>
+
+      <div class="section-header">Certifications (comma-separated)</div>
+      <div class="field-group">
+        <input class="field-input" id="f-certs" oninput="render()" value="PMP,PMI-ACP,ITIL,Agile,SAFe 4.0,Scrum Master">
+      </div>
+
+      <div class="section-header">Tools & Platforms (comma-separated)</div>
+      <div class="field-group">
+        <input class="field-input" id="f-tools" oninput="render()" value="🤖 Claude,📓 NotebookLM,💎 Gemini Gems,📋 Jira,📄 Confluence,🐙 GitHub,✅ Asana,🗄 Airtable,📊 Smartsheet">
+      </div>
+
+      <div class="section-header">Core Competencies (one per line)</div>
+      <div class="field-group">
+        <textarea class="field-input" id="f-competencies" rows="8" oninput="render()">Enterprise GenAI Transformation
+Agentic Workflow Architecture
+GTM & Revenue Enablement
+AI-Powered Seller Productivity
+Operational Excellence
+Development Productivity
+Strategic Leadership & Vision
+Data-Driven Decision Making
+Execution Excellence
+Cloud Platform (OCI / Kubernetes)
+TPM Organization Building
+Partner & Ecosystem Management</textarea>
+      </div>
+    </div>
+
+    <!-- SUGGESTIONS TAB -->
+    <div class="editor-scroll tab-content" id="tab-suggestions">
+      <div class="section-header">Improvement Suggestions</div>
+      <p style="font-size:15.0px;color:#888;margin-bottom:12px;line-height:1.5">As you iterate, accepted improvements will be saved here for future sessions.</p>
+      <div id="suggestions-list">
+        <div class="suggestion-item">
+          <div class="s-label">💡 ATS Optimization</div>
+          Add LinkedIn URL to contact info — many ATS systems and recruiters expect it as standard.
+        </div>
+        <div class="suggestion-item">
+          <div class="s-label">💡 Quantify Oracle Impact</div>
+          The Oracle roles (2018–2021) could use more numbers — OCI migration SLA %, customer satisfaction scores, or team size metrics beyond the 1,000+ customers figure.
+        </div>
+        <div class="suggestion-item">
+          <div class="s-label">💡 Recency Signal</div>
+          The "Jan 2025 – Present" role is packed. Consider splitting it into two bullet clusters: AI/Agentic work vs. GTM/Sales Transformation for readability.
+        </div>
+        <div class="suggestion-item">
+          <div class="s-label">💡 Photo</div>
+          The resume includes a professional photo — ensure it's in the same folder as index.html named "photo.jpg" for it to display in the preview.
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="field-label" style="margin-bottom:6px">Add a custom note</div>
+        <textarea class="field-input" id="new-suggestion" rows="3" placeholder="Paste feedback or improvement idea..."></textarea>
+        <button class="btn btn-secondary" style="margin-top:6px;width:100%" onclick="addSuggestion()">Save Note</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PREVIEW PANEL ── -->
+  <div class="preview-panel">
+    <div id="resume-preview"></div>
+  </div>
+</div>
+
+<script>
+// ── Data ──
+let data = {
+  jobs: [
+    {
+      title: "Head of TPM – AI Assisted Virtual Expert Platform, Sales Transformation & GTM",
+      company: "Intuit",
+      period: "Jan 2025 – Present",
+      location: "Mountain View, CA",
+      bullets: [
+        "Led end-to-end <b>Lead2Cash program</b> — reimagined the full sales motion from top-of-funnel through lead management, seller experience, contract & order using AI; <b>saved 2,400 sellers 10 hrs/week each</b> (24,000+ hrs/week recaptured) and influenced <b>$200M+ in revenue pipeline</b>.",
+        "Spearheaded <b>MidMarket Agentic AI Workspace</b> for 2,400 IES AEs/BDRs — <b>cut cold leads 50%</b>, accelerated pipeline conversion and boosted seller productivity across the segment.",
+        "Built <b>VEP PMO Claude Skill Ecosystem</b> — multi-agent orchestrator, EA digest & planning skills; slashed PM reporting from <b>~6 hrs/week to under 15 minutes</b> (40+ hrs/month recaptured).",
+        "Improved TurboTax Live expert matching <b>25% via AI routing</b> — drove a <b>15% revenue increase</b> during peak tax season through intelligent expert-customer pairing.",
+        "Led AI-powered document understanding and intelligent insights platform, measurably improving expert efficiency and customer satisfaction."
+      ]
+    },
+    {
+      title: "Head of TPM: Operational Excellence, GenAI Powered Platform & Dev Productivity",
+      company: "Intuit",
+      period: "Aug 2023 – Dec 2024",
+      location: "Mountain View, CA",
+      bullets: [
+        "Drove enterprise-wide rollout of <b>GenAI code assistants</b> across 2,000+ engineers — delivered <b>50% lift in development velocity</b> with 40% code acceptance and 80% test acceptance rates.",
+        "Partnered with <b>Bain Consulting</b> to design and execute the GenAI Workforce of the Future program for <b>5,000+ employees</b>, owning strategy, planning, budgeting, and full-cycle delivery.",
+        "Orchestrated <b>Intuit's first Agentic workflows</b> for Tax preparation, collaborating across product and program delivery teams leveraging user research and data to guide strategy.",
+        "Launched and evangelized <b>NotebookLM and Gemini Gems</b> across TPM portfolios, accelerating content creation, training development, and program review cycles company-wide."
+      ]
+    },
+    {
+      title: "Group Program Management Leader – Platform (Kubernetes), Operational Excellence & Dev Velocity",
+      company: "Intuit",
+      period: "2021 – 2023",
+      location: "Mountain View, CA",
+      bullets: [
+        "Led initiatives achieving <b>200% improvement in incident detection velocity</b> and <b>67% increase in developer velocity</b> across 2,000+ engineers company-wide.",
+        "Delivered cross-functional programs generating <b>$7M in cost savings</b> within two fiscal years.",
+        "Created strategy, roadmap, and <b>Organizational Operating Rhythm</b> for Developer Experiences (650-engineer org).",
+        "Led PMO Craft community as <b>Official Bar Raiser and Awesome Assessor</b> for promotions and senior management hiring.",
+        "Champion of operational excellence — architected mission-critical platforms achieving <b>five-nines (99.999%) availability</b>, delivering uncompromising reliability with less than <b>5.26 minutes of downtime per year</b>."
+      ]
+    },
+    {
+      title: "Director of Program Management – OCI (Oracle Cloud Infrastructure)",
+      company: "Oracle",
+      period: "2018 – 2021",
+      location: "Redwood Shores, CA",
+      bullets: [
+        "Managed <b>OCI Migration for Fusion Applications</b> across 1,000+ enterprise customers generating <b>$500M+ in combined ARR</b>, ensuring delivery under strict SLAs.",
+        "Managed weekly patching for <b>20,000+ Fusion SaaS customers</b>, reducing download times by <b>50%</b> and improving platform reliability at scale.",
+        "Drove quarterly roadmap and planning cadence across Product, Engineering, and BizOps, aligning 10+ cross-functional teams to shared delivery milestones.",
+        "<b>Built TPM team from scratch</b>, owning all aspects of hiring, talent development, and performance management; managed a team of 10 senior program managers."
+      ]
+    },
+    {
+      title: "Senior Program Manager – Fusion Applications",
+      company: "Oracle",
+      period: "2012 – 2018",
+      location: "Redwood Shores, CA",
+      bullets: [
+        "Increased <b>release velocity by 20%</b> with full ownership of release schedules, milestones, and roadmaps across all Fusion Application product lines.",
+        "Partnered directly with VP of Software Engineering; delivered <b>40% process efficiency gains</b> by eliminating systemic bottlenecks across the release pipeline."
+      ]
+    },
+    {
+      title: "Software Development Manager & Technical Lead",
+      company: "Oracle",
+      period: "2006 – 2012",
+      location: "Bengaluru, India",
+      bullets: [
+        "Spearheaded <b>Next-Gen Framework Installer and Patching Framework</b> — reduced installation and upgrade times by <b>40%</b>, setting a new deployment standard for Oracle software.",
+        "Drove architectural design and technical direction for installer/patching components; managed and mentored a team of 10 engineers delivering complex projects on time and within scope."
+      ]
+    },
+    {
+      title: "Software Developer",
+      company: "Tavant Technologies",
+      period: "2005 – 2006",
+      location: "Bengaluru, India",
+      bullets: [
+        "Led development of <b>mortgage origination and loan processing systems</b>, reducing processing times by <b>30%</b> through workflow automation.",
+        "Implemented advanced <b>data analytics and real-time reporting</b> for loan portfolio monitoring, enabling faster risk assessment."
+      ]
+    }
+  ],
+  impacts: [
+    { icon: "🚀", title: "AI-First Pioneer", body: "Intuit's first agentic workflows; GenAI workforce transformation for 5,000+ employees with Bain Consulting." },
+    { icon: "💰", title: "Revenue & Growth", body: "$200M+ pipeline influenced; 15% tax-season revenue growth; 10 hrs/week per seller saved via AI Lead2Cash." },
+    { icon: "🏗", title: "Org Builder at Scale", body: "Built TPM teams from zero; 650-engineer operating rhythm; $7M+ cost savings delivered." },
+    { icon: "🌱", title: "Mentorship & Craft", body: "Official Bar Raiser; coaches emerging leaders via Global Mentorship Initiative & Intuit programs." }
+  ]
+};
+
+// ── Job Editor ──
+function renderJobsEditor() {
+  const container = document.getElementById('jobs-editor');
+  container.innerHTML = data.jobs.map((job, ji) => `
+    <div class="job-card">
+      <div class="job-card-header">
+        <span>Position ${ji + 1}</span>
+        <button class="remove-btn" onclick="removeJob(${ji})">✕</button>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Title</div>
+        <input class="field-input" value="${esc(job.title)}" oninput="updateJob(${ji},'title',this.value)">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Company</div>
+        <input class="field-input" value="${esc(job.company)}" oninput="updateJob(${ji},'company',this.value)">
+      </div>
+      <div class="field-group" style="display:flex;gap:6px">
+        <div style="flex:1">
+          <div class="field-label">Period</div>
+          <input class="field-input" value="${esc(job.period)}" oninput="updateJob(${ji},'period',this.value)">
+        </div>
+        <div style="flex:1">
+          <div class="field-label">Location</div>
+          <input class="field-input" value="${esc(job.location)}" oninput="updateJob(${ji},'location',this.value)">
+        </div>
+      </div>
+      <div class="field-label" style="margin-bottom:6px">Bullets</div>
+      ${job.bullets.map((b, bi) => `
+        <div class="bullet-item">
+          <textarea class="field-input" rows="2" oninput="updateBullet(${ji},${bi},this.value)">${esc(b)}</textarea>
+          <button class="remove-btn" onclick="removeBullet(${ji},${bi})">✕</button>
+        </div>
+      `).join('')}
+      <button class="add-btn" onclick="addBullet(${ji})">+ Add Bullet</button>
+    </div>
+  `).join('');
+}
+
+function renderImpactEditor() {
+  const container = document.getElementById('impact-editor');
+  container.innerHTML = data.impacts.map((imp, i) => `
+    <div class="job-card">
+      <div class="job-card-header">
+        <span>${imp.icon} ${imp.title}</span>
+        <button class="remove-btn" onclick="removeImpact(${i})">✕</button>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Icon</div>
+        <input class="field-input" value="${esc(imp.icon)}" oninput="updateImpact(${i},'icon',this.value)" style="width:60px;display:inline">
+        <input class="field-input" value="${esc(imp.title)}" oninput="updateImpact(${i},'title',this.value)" style="width:calc(100% - 66px);display:inline;margin-left:6px">
+      </div>
+      <div class="field-group">
+        <textarea class="field-input" rows="2" oninput="updateImpact(${i},'body',this.value)">${esc(imp.body)}</textarea>
+      </div>
+    </div>
+  `).join('');
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function updateJob(ji, field, val) { data.jobs[ji][field] = val; render(); }
+function updateBullet(ji, bi, val) { data.jobs[ji].bullets[bi] = val; render(); }
+function removeBullet(ji, bi) { data.jobs[ji].bullets.splice(bi,1); renderJobsEditor(); render(); }
+function addBullet(ji) { data.jobs[ji].bullets.push('New achievement here'); renderJobsEditor(); render(); }
+function removeJob(ji) { if(confirm('Remove this position?')) { data.jobs.splice(ji,1); renderJobsEditor(); render(); } }
+function addJob() {
+  data.jobs.push({ title:'New Position', company:'Company', period:'Year – Year', location:'Location', bullets:['Achievement here'] });
+  renderJobsEditor(); render();
+}
+function updateImpact(i, field, val) { data.impacts[i][field] = val; render(); }
+function removeImpact(i) { data.impacts.splice(i,1); renderImpactEditor(); render(); }
+function addImpact() {
+  data.impacts.push({ icon:'⭐', title:'New Impact', body:'Describe the impact here.' });
+  renderImpactEditor(); render();
+}
+
+// ── Logo SVGs ──
+const LOGOS = {
+  github: `<svg width="13" height="13" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:3px"><path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z" fill="white"/></svg>`,
+  linkedin: `<svg width="13" height="13" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:3px"><rect width="24" height="24" rx="3" fill="#0077b5"/><path d="M6.94 5a2 2 0 1 1-4-.002A2 2 0 0 1 6.94 5zM7 8.48H3V21h4V8.48zm6.32 0H9.34V21h3.94v-6.57c0-3.66 4.77-4 4.77 0V21H22v-7.93c0-6.17-7.06-5.94-8.72-2.91l.04-1.68z" fill="white"/></svg>`,
+  gmail: `<svg width="14" height="14" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:3px"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64V9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/></svg>`,
+  intuit: `<svg width="44" height="14" viewBox="0 0 100 32" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px"><text x="0" y="26" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="white" letter-spacing="-1">intuit</text></svg>`,
+  oracle: `<svg width="52" height="14" viewBox="0 0 120 32" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px"><text x="0" y="26" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="white" letter-spacing="-1">ORACLE</text></svg>`,
+  tavant: `<svg width="46" height="14" viewBox="0 0 110 32" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px"><text x="0" y="26" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="white" letter-spacing="-1">Tavant</text></svg>`,
+};
+
+function companyLogo(name) {
+  const n = name.toLowerCase();
+  if (n.includes('intuit')) return LOGOS.intuit;
+  if (n.includes('oracle')) return LOGOS.oracle;
+  if (n.includes('tavant')) return LOGOS.tavant;
+  return '';
+}
+
+function companyBadgeStyle(name) {
+  const n = name.toLowerCase();
+  if (n.includes('oracle')) return 'background:#C74634;';
+  if (n.includes('intuit')) return 'background:#236cff;';
+  return '';
+}
+
+// ── Auto-highlight metrics: wraps $X, X%, Xhrs, X,000 etc in .metric pill ──
+function highlight(text) {
+  return text.replace(/(\$[\d,.]+[MBK+]*(?:[\+\-])?(?:\s*(?:M|B|K))?|\b\d[\d,]*\.?\d*\s*(?:%|hrs?\/week|hrs?\/month|engineers?|employees?|customers?|sellers?|hrs|hours?|x|X|\+)?(?:\s*(?:recaptured|lift|ARR|pipeline|savings|increase|improvement|faster|velocity|acceptance|reduction))?)/g,
+    (m) => `<span class="metric">${m.trim()}</span>`
+  );
+}
+
+// ── Render Resume ──
+function render() {
+  const name = document.getElementById('f-name').value;
+  const tagline = document.getElementById('f-tagline').value;
+  const email = document.getElementById('f-email').value;
+  const website = document.getElementById('f-website').value;
+  const linkedin = document.getElementById('f-linkedin').value;
+  const github = document.getElementById('f-github').value;
+  const phone = document.getElementById('f-phone').value;
+  const location = document.getElementById('f-location').value;
+  const profile = document.getElementById('f-profile').value;
+  const edu1d = document.getElementById('edu1-degree').value;
+  const edu1s = document.getElementById('edu1-school').value;
+  const edu2d = document.getElementById('edu2-degree').value;
+  const edu2s = document.getElementById('edu2-school').value;
+  const certs = document.getElementById('f-certs').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const tools = document.getElementById('f-tools').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const comps = document.getElementById('f-competencies').value.split('\n').map(s=>s.trim()).filter(Boolean);
+
+  // Split jobs: page 1 (first 3 Intuit) vs page 2 (rest)
+  const page1Jobs = data.jobs.slice(0,3);
+  const page2Jobs = data.jobs.slice(3);
+
+  const jobsHTML = (jobs) => jobs.map(job => `
+    <div class="r-job">
+      <div class="r-job-title">${job.title}</div>
+      <div><span class="r-job-company" style="${companyBadgeStyle(job.company)}">${companyLogo(job.company) || job.company}</span></div>
+      <div class="r-job-meta">
+        <span>📅 ${job.period}</span>
+        <span>📍 ${job.location}</span>
+      </div>
+      <ul class="r-job-bullets">
+        ${job.bullets.map(b => `<li>${highlight(b)}</li>`).join('')}
+      </ul>
+    </div>
+  `).join('');
+
+  const impactsHTML = data.impacts.map(imp => `
+    <div class="r-impact-card">
+      <div class="r-impact-title">${imp.icon} ${imp.title}</div>
+      <div class="r-impact-body">${imp.body}</div>
+    </div>
+  `).join('');
+
+  const certsHTML = certs.map(c => `<span class="r-cert-tag">${c}</span>`).join('');
+  const toolsHTML = tools.map(t => `<span class="r-tool-tag">${t}</span>`).join('');
+  const compsHTML = comps.map(c => `<li style="font-family:Arial,sans-serif;font-size:10.6px;color:#333;padding:1.5px 0 1.5px 12px;position:relative;list-style:none"><span style="position:absolute;left:0;color:#0a3161">▸</span>${c}</li>`).join('');
+
+  const html = `
+    <!-- PAGE 1 -->
+    <div class="resume">
+      <div class="r-header">
+        <div class="r-header-text">
+          <div class="r-name">${name}</div>
+          <div class="r-tagline">${tagline}</div>
+          <div class="r-contact">
+            <a href="https://${website}" target="_blank" style="color:#dceefb;text-decoration:none">🔗 ${website}</a>
+            ${linkedin ? `<a href="https://${linkedin}" target="_blank" style="color:#dceefb;text-decoration:none">${LOGOS.linkedin}${linkedin}</a>` : ''}
+            ${github ? `<a href="https://${github}" target="_blank" style="color:#dceefb;text-decoration:none">${LOGOS.github}${github}</a>` : ''}
+          </div>
+          <div class="r-contact" style="margin-top:3px">
+            <a href="mailto:${email}" style="color:#dceefb;text-decoration:none">${LOGOS.gmail}${email}</a>
+            <span>📱 ${phone}</span>
+            <span>📍 ${location}</span>
+          </div>
+        </div>
+        <img class="r-photo" src="photo.jpg" alt="Sandeep Goyal">
+      </div>
+
+      <!-- Profile -->
+      <div style="padding:10px 16px 0">
+        <div class="r-section-title">Executive Profile</div>
+        <div class="r-profile" style="padding:0;background:none;border:none;box-shadow:none">
+          <!-- Summary sentence -->
+          <div style="font-family:Arial,sans-serif;font-size:10.5px;color:#333;line-height:1.6;padding:10px 14px 8px;background:linear-gradient(135deg,#f0f5fb,#e8f1fb);border-left:4px solid #1e6ab4;border-radius:0 6px 0 0;margin-bottom:0">
+            Visionary TPM executive with <b>20+ years</b> driving enterprise-scale transformation across <b>AI/GenAI, Sales & GTM, Customer Success, Cloud Infrastructure</b> and Partner ecosystems at Oracle and Intuit. Pioneer in enterprise AI adoption — builds high-performing TPM organizations, shapes operating rhythms for 650-engineer orgs, and consistently translates ambiguous mandates into measurable business outcomes. Champion of operational excellence with a proven track record of architecting mission-critical platforms to achieve <b>five-nines (99.999%) availability</b> and uncompromising reliability.
+          </div>
+          <!-- Stat chips row -->
+          <div style="display:flex;gap:0;border-top:1px solid #d0e4f7">
+            ${[
+              { num: '$200M+', label: 'Revenue Pipeline' },
+              { num: '24,000+', label: 'hrs/week Saved' },
+              { num: '50%', label: 'Dev Velocity Lift' },
+              { num: '$7M+', label: 'Cost Savings' },
+              { num: '5,000+', label: 'Employees Upskilled' },
+              { num: '1,000+', label: 'OCI Migrations' },
+              { num: '99.999%', label: 'Platform Availability' },
+            ].map((s, i) => `
+              <div style="flex:1;text-align:center;padding:8px 4px;background:${i%2===0?'#f8fafd':'#f0f5fb'};border-right:1px solid #d0e4f7${i===5?';border-radius:0 0 6px 0':i===0?';border-radius:0 0 0 0':''}">
+                <div style="font-family:Arial Black,Arial,sans-serif;font-size:13px;font-weight:900;color:#0a3161;line-height:1">${s.num}</div>
+                <div style="font-family:Arial,sans-serif;font-size:8px;color:#666;margin-top:2px;line-height:1.2">${s.label}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="r-body">
+        <div class="r-left">
+          <div class="r-section-title">Experience</div>
+          ${jobsHTML(page1Jobs)}
+        </div>
+        <div class="r-right">
+          <div class="r-section-title">Executive Impact</div>
+          ${impactsHTML}
+
+          <div class="r-section-title" style="margin-top:12px">Education</div>
+          <div class="r-edu-item">
+            <div class="r-edu-degree">${edu1d}</div>
+            <div class="r-edu-school">${edu1s}</div>
+          </div>
+          <div class="r-edu-item">
+            <div class="r-edu-degree">${edu2d}</div>
+            <div class="r-edu-school">${edu2s}</div>
+          </div>
+
+          <div class="r-section-title" style="margin-top:12px">Certifications</div>
+          <div class="r-cert-tags">${certsHTML}</div>
+
+          <div class="r-section-title" style="margin-top:12px">Tools & Platforms</div>
+          <div class="r-tool-tags">${toolsHTML}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 2 -->
+    <div class="resume" style="margin-top:12px">
+      <div class="r-header" style="padding:10px 24px">
+        <div class="r-header-text">
+          <div class="r-name" style="font-size:22.5px">${name}</div>
+          <div class="r-tagline">Experience (continued)</div>
+        </div>
+      </div>
+      <div class="r-body">
+        <div class="r-left">
+          <div class="r-section-title">Experience (continued)</div>
+          ${jobsHTML(page2Jobs)}
+        </div>
+        <div class="r-right">
+          <div class="r-section-title">Core Strengths</div>
+          <div class="r-cert-tags" style="margin-bottom:12px">
+            ${['Operating Rhythm','Agile / SAFe','GenAI Strategy','Agentic Workflows','Exec Stakeholder Mgmt','Cross-Org Influence','Thrive in Ambiguity','Data-Driven Decisions','AI-Native Delivery','GTM Strategy','Revenue Enablement','Program Dashboards'].map(s=>`<span class="r-cert-tag">${s}</span>`).join('')}
+          </div>
+
+          <div class="r-section-title">Core Competencies</div>
+          <ul style="padding:0">${compsHTML}</ul>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('resume-preview').innerHTML = html;
+}
+
+// ── Tab Switching ──
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.editor-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'experience') renderJobsEditor();
+  if (name === 'sidebar') renderImpactEditor();
+}
+
+// ── Save ──
+function exportPDF() {
+  const btn = event.target;
+  btn.textContent = 'Generating…';
+  btn.disabled = true;
+  const el = document.getElementById('resume-preview');
+  html2pdf().set({
+    margin: 0,
+    filename: 'SandeepGoyal_Resume.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+  }).from(el).save().then(() => {
+    btn.textContent = '⬇ Export PDF';
+    btn.disabled = false;
+  });
+}
+
+function saveData() {
+  localStorage.setItem('resume-data', JSON.stringify(data));
+  // Capture all field values too
+  const fields = ['f-name','f-tagline','f-email','f-website','f-linkedin','f-github','f-phone','f-location','f-profile','edu1-degree','edu1-school','edu2-degree','edu2-school','f-certs','f-tools','f-competencies'];
+  const fieldVals = {};
+  fields.forEach(id => { const el = document.getElementById(id); if(el) fieldVals[id] = el.value; });
+  localStorage.setItem('resume-fields', JSON.stringify(fieldVals));
+  const btn = event.target;
+  btn.textContent = '✓ Saved!';
+  setTimeout(() => btn.textContent = 'Save Changes', 2000);
+}
+
+function loadSaved() {
+  const savedFields = localStorage.getItem('resume-fields');
+  if (savedFields) {
+    const fv = JSON.parse(savedFields);
+    Object.entries(fv).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+  }
+  const savedData = localStorage.getItem('resume-data');
+  if (savedData) {
+    try { data = JSON.parse(savedData); } catch(e) {}
+  }
+}
+
+// ── Suggestions ──
+function addSuggestion() {
+  const text = document.getElementById('new-suggestion').value.trim();
+  if (!text) return;
+  const div = document.createElement('div');
+  div.className = 'suggestion-item';
+  div.innerHTML = `<div class="s-label">📝 Custom Note</div>${text}`;
+  document.getElementById('suggestions-list').appendChild(div);
+  document.getElementById('new-suggestion').value = '';
+}
+
+// ── Print styles ──
+const printStyle = document.createElement('style');
+printStyle.textContent = `
+  @media print {
+    body > *:not(.preview-panel) { display: none !important; }
+    .preview-panel { padding: 0; background: white; }
+    .resume { box-shadow: none; }
+  }
+`;
+document.head.appendChild(printStyle);
+
+// ── Init ──
+loadSaved();
+render();
+renderJobsEditor();
+</script>
+</body>
+</html>
